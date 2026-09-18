@@ -59,9 +59,10 @@ st.info(
 st.markdown("---")
 st.header("2. 장르 및 영화별 총 관객수 분포")
 
+# 트리맵 오류 방지: path에 고유 식별자(movieCd)와 영화명(movieNm)을 함께 지정
 fig2 = px.treemap(
     df,
-    path=[px.Constant("전체 영화"), "primary_genre", "movieNm"],
+    path=[px.Constant("전체 영화"), "primary_genre", "movieNm", "movieCd"],
     values="total_audi",
     title="장르 및 영화별 총 관객수 트리맵",
     color="primary_genre",

@@ -17,8 +17,8 @@ def load_data():
     url = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_movies.csv"
     df = pd.read_csv(url)
 
-    # 장르 전처리: 세로막대 기호(|)로 분리되어 있는 경우 첫 번째 장르만 추출
-    df["primary_genre"] = df["genre"].astype(str).apply(lambda x: x.split("|")[0])
+    # 장르 전처리: .str 접근자를 사용해 안전하게 첫 번째 장르만 추출
+    df["primary_genre"] = df["genre"].astype(str).str.split("|").str[0]
 
     return df
 
@@ -31,11 +31,9 @@ df = load_data()
 st.markdown("---")
 st.header("1. 장르별 영화 편수 분포")
 
-# 장르별 편수 집계
 genre_counts = df["primary_genre"].value_counts().reset_index()
 genre_counts.columns = ["장르", "편수"]
 
-# Plotly 도넛 차트 생성
 fig1 = px.pie(
     genre_counts,
     names="장르",
@@ -44,16 +42,13 @@ fig1 = px.pie(
     title="장르별 영화 비율 및 편수",
 )
 
-# 마우스 호버 시 편수와 비율이 보이도록 설정
 fig1.update_traces(
     textinfo="percent+label",
     hovertemplate="<b>장르: %{label}</b><br>편수: %{value}편<br>비율: %{percent}",
 )
 
-# Streamlit에 그래프 출력
 st.plotly_chart(fig1, use_container_width=True)
 
-# 그래프 설명 구역
 st.info(
     "💡 **이 그래프로 알 수 있는 것:** 개봉한 영화 중 어떤 장르가 가장 높은 비중을 차지하는지 한눈에 파악할 수 있으며, 특정 장르에 편중된 시장 경향성을 도넛 비율로 확인할 수 있습니다."
 )
@@ -64,7 +59,6 @@ st.info(
 st.markdown("---")
 st.header("2. 장르 및 영화별 총 관객수 분포")
 
-# Plotly 트리맵 차트 생성
 fig2 = px.treemap(
     df,
     path=[px.Constant("전체 영화"), "primary_genre", "movieNm"],
@@ -73,16 +67,13 @@ fig2 = px.treemap(
     color="primary_genre",
 )
 
-# 마우스 호버 시 영화명과 총 관객수가 보이도록 설정
 fig2.update_traces(
     hovertemplate="<b>%{label}</b><br>총 관객수: %{value:,}명",
     root_color="lightgrey",
 )
 
-# Streamlit에 그래프 출력
 st.plotly_chart(fig2, use_container_width=True)
 
-# 그래프 설명 구역
 st.info(
     "💡 **이 그래프로 알 수 있는 것:** 장르 전체의 총 관객 규모뿐만 아니라, 특정 장르 내에서 흥행을 주도한 대표 영화와 관객수의 기여도를 면적의 크기로 한눈에 비교할 수 있습니다."
 )
@@ -93,7 +84,6 @@ st.info(
 st.markdown("---")
 st.header("3. 총 관객수 분포")
 
-# 히스토그램 생성
 fig3 = px.histogram(
     df,
     x="total_audi",
@@ -102,20 +92,16 @@ fig3 = px.histogram(
     labels={"total_audi": "총 관객수 (명)"},
 )
 
-# 마우스 호버 시 구간 정보 표시
 fig3.update_traces(
     hovertemplate="<b>관객수 구간: %{x}</b><br>영화 수: %{y}편"
 )
 
-# Streamlit에 그래프 출력
 st.plotly_chart(fig3, use_container_width=True)
 
-# 데이터 기반 최다 관객 영화 정보 자동 추출
 top_movie = df.loc[df["total_audi"].idxmax()]
 top_movie_name = top_movie["movieNm"]
 top_movie_audi = top_movie["total_audi"]
 
-# 그래프 설명 구역 및 주요 수치 안내
 st.info(
     f"💡 **이 그래프로 알 수 있는 것:** 대부분의 영화는 관객수가 적은 하위 구간(약 100만 명 미만 구간)에 집중되어 롱테일 형태의 비대칭 분포를 보입니다. "
     f"이 중 가장 많은 관객을 동원한 최고 흥행 영화는 **'{top_movie_name}'**(총 {top_movie_audi:,.0f}명)입니다."
@@ -127,7 +113,6 @@ st.info(
 st.markdown("---")
 st.header("4. 개봉일 스크린수와 총 관객수의 관계")
 
-# Plotly 산점도 생성
 fig4 = px.scatter(
     df,
     x="first_scrn",
@@ -142,15 +127,12 @@ fig4 = px.scatter(
     },
 )
 
-# 마우스 호버 포맷 세부 설정
 fig4.update_traces(
     hovertemplate="<b>%{hovertext}</b><br>개봉일 스크린수: %{x:,}개<br>총 관객수: %{y:,}명"
 )
 
-# Streamlit에 그래프 출력
 st.plotly_chart(fig4, use_container_width=True)
 
-# 그래프 설명 구역
 st.info(
     "💡 **이 그래프로 알 수 있는 것:** 개봉 첫날 확보한 스크린수가 많을수록 대체로 최종 관객수도 높은 양의 상관관계를 보이며, 장르별 스크린 확보 수준 및 흥행 규모 차이를 비교해 볼 수 있습니다."
 )
@@ -161,12 +143,10 @@ st.info(
 st.markdown("---")
 st.header("5. 주요 장르별 총 관객수 분포 (영화 10편 이상 장르)")
 
-# 영화 수가 10편 이상인 장르만 필터링
-genre_counts = df["primary_genre"].value_counts()
-major_genres = genre_counts[genre_counts >= 10].index
+genre_counts_series = df["primary_genre"].value_counts()
+major_genres = genre_counts_series[genre_counts_series >= 10].index
 df_filtered = df[df["primary_genre"].isin(major_genres)]
 
-# 박스플롯 생성
 fig5 = px.box(
     df_filtered,
     x="primary_genre",
@@ -181,15 +161,12 @@ fig5 = px.box(
     },
 )
 
-# 호버 서식 지정
 fig5.update_traces(
     hovertemplate="<b>%{hovertext}</b><br>총 관객수: %{y:,}명"
 )
 
-# Streamlit에 그래프 출력
 st.plotly_chart(fig5, use_container_width=True)
 
-# 그래프 설명 구역
 st.info(
     "💡 **이 그래프로 알 수 있는 것:** 주요 장르별 관객수의 중간값과 편차를 비교할 수 있으며, 박스 범위 바깥의 아웃라이어 점을 통해 장르 평균을 뛰어넘는 대형 흥행작 유무를 쉽게 식별할 수 있습니다."
 )
@@ -200,7 +177,6 @@ st.info(
 st.markdown("---")
 st.header("6. 개봉일 스크린수 · 총 관객수 · 첫 주 관객수의 관계 (버블 차트)")
 
-# 버블 차트 생성
 fig6 = px.scatter(
     df,
     x="first_scrn",
@@ -218,15 +194,12 @@ fig6 = px.scatter(
     },
 )
 
-# 호버 포맷 지정
 fig6.update_traces(
     hovertemplate="<b>%{hovertext}</b><br>개봉일 스크린수: %{x:,}개<br>총 관객수: %{y:,}명<br>첫 주 관객수: %{marker.size:,}명"
 )
 
-# Streamlit에 그래프 출력
 st.plotly_chart(fig6, use_container_width=True)
 
-# 그래프 설명 구역
 st.info(
     "💡 **이 그래프로 알 수 있는 것:** 초기 스크린 확보량(X축)과 최종 흥행(Y축)뿐만 아니라 버블 크기(첫 주 관객수)를 함께 파악함으로써, 초반 입소문이나 개봉 첫 주 흥행 에너지가 최종 관객수 선착에 얼마나 결정적이었는지 3차원적 맥락으로 해석할 수 있습니다."
 )
@@ -237,7 +210,6 @@ st.info(
 st.markdown("---")
 st.header("7. 제작 국가 및 장르별 영화 편수 (선버스트 차트)")
 
-# 선버스트 생성
 fig7 = px.sunburst(
     df,
     path=["nation", "primary_genre"],
@@ -245,15 +217,12 @@ fig7 = px.sunburst(
     color="nation",
 )
 
-# 호버 서식 지정
 fig7.update_traces(
     hovertemplate="<b>%{label}</b><br>영화 편수: %{value}편<br>비율: %{percentParent:.1%}"
 )
 
-# Streamlit에 그래프 출력
 st.plotly_chart(fig7, use_container_width=True)
 
-# 그래프 설명 구역
 st.info(
     "💡 **이 그래프로 알 수 있는 것:** 영화를 제작 국가별로 계층화하여 각 국가 내에서 어떤 장르가 다양하게 제작 및 수입되어 개봉했는지 장르별 수량 비중을 원형 다단계 구조로 확인할 수 있습니다."
 )
@@ -264,7 +233,6 @@ st.info(
 st.markdown("---")
 st.header("8. 3위권 유지 기간과 총 관객수의 관계")
 
-# 산점도 생성
 fig8 = px.scatter(
     df,
     x="days_in_top10",
@@ -279,15 +247,12 @@ fig8 = px.scatter(
     },
 )
 
-# 호버 포맷 지정
 fig8.update_traces(
     hovertemplate="<b>%{hovertext}</b><br>3위권 머문 날수: %{x}일<br>총 관객수: %{y:,}명"
 )
 
-# Streamlit에 그래프 출력
 st.plotly_chart(fig8, use_container_width=True)
 
-# 그래프 설명 구역
 st.info(
     "💡 **이 그래프로 알 수 있는 것:** 박스오피스 상위권(10위권)에 롱런하며 오래 머문 일수가 길수록 총 관객수도 비례하여 커지는 뚜렷한 양의 상관관계를 나타냅니다."
 )
